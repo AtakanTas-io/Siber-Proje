@@ -1,35 +1,59 @@
-# 🔒 Çok Katmanlı Kimlik Doğrulama Güvenliği ve Akıllı Brute-Force Laboratuvarı
+# Authentication Defense Lab
 
-Bu proje, web tabanlı kimlik doğrulama panellerine yönelik gerçekleştirilen gelişmiş **Çevrimiçi Kaba Kuvvet (Online Brute-Force)** saldırılarını ve bu saldırılara karşı geliştirilen kurumsal savunma mimarilerini (Hız Sınırlama & IP Tabanlı Proaktif Ban) simüle eden nesne yönelimli (OOP) bir siber güvenlik laboratuvarıdır.
+A small Python security lab for comparing a deliberately weak authentication model with a stronger in-memory model that adds password-policy checks, request pacing and temporary IP-based blocking.
 
-## 🚀 Proje Mimarisi
+> **Scope:** This repository is an educational, local simulation. It does not target a real website, network service or third-party system.
 
-Proje, birbiriyle entegre çalışan 4 temel Python modülünden oluşmaktadır:
+## Purpose
 
-- **`veri_tabani.py`**: Yüksek entropili, kurumsal şifre politikalarına uygun sahte veri havuzu.
-- **`app_zayif.py`**: Herhangi bir güvenlik duvarı veya frekans denetimi barındırmayan savunmasız sistem baseline'ı.
-- **`app_guclu.py`**: Bünyesinde Regex şifre kontrolü, milisaniyelik **Rate Limiting** ve proaktif **IP Blacklisting** algoritmaları barındıran kurumsal kalkan.
-- **`attacker.py`**: Sözlük listesindeki verileri kurallara göre dinamik olarak mutasyona uğratan (Rule-Based Mutation) ve hedef paneli farklı hız senaryolarıyla tarayan akıllı atak otomasyonu.
+The project is intended to demonstrate a simple defensive idea: authentication security cannot rely on password checking alone. Repeated failed attempts and unusually fast requests can be tracked and used to temporarily block a simulated client.
 
-## 📊 Laboratuvar Deney Senaryoları
+The implementation is intentionally compact so the behavior is easy to inspect in code.
 
-Laboratuvarda 3 farklı kontrollü senaryo test edilmiştir:
+## Repository structure
 
-1. **Savunmasız Durum (Baseline):** Herhangi bir koruma katmanı olmadığında otomasyon araçlarının milisaniyeler içinde sistemi suistimal edebildiği doğrulanmıştır.
-2. **Agresif Saldırı ve Proaktif IP Banı:** Saldırgan gecikmesiz (hızlı) saldırdığında, sistem hız ihlali tespit ettiği için isteği kimlik doğrulama katmanına sokmadan `429 Too Many Requests` ile havada bloklar ve saldırgan IP'sini kara listeye alır. **(Doğru şifre gönderilse dahi sistem geçit vermez).**
-3. **Sinsi Saldırı (Low and Slow):** Saldırganın hız sınırının altında kalacak şekilde (0.5sn gecikmeyle) yavaş istekler atarak Rate Limiting katmanını bypass edebildiği ve kümülatif hata sınırına ulaşmadan şifreyi kırabildiği siber güvenlik zafiyeti/sınırlılığı simüle edilmiştir.
+- `app_zayif.py` — deliberately weak authentication baseline
+- `app_guclu.py` — stronger in-memory authentication model
+- `attacker.py` — local attack/simulation driver used to exercise the models
+- `veri_tabani.py` — small local credential dataset used by the simulation
+- `wordlist.txt` — tiny sample word list
 
-## 🛠️ Kurulum ve Çalıştırma
+## Implemented controls
 
-Proje yerel çalışma ortamında (localhost) izole bellekte test edilmiştir. Harici hiçbir canlı sisteme veya ağ trafiğine müdahale edilmemiştir.
+`app_guclu.py` currently implements:
+
+- minimum password-complexity checks with regular expressions
+- per-IP failed-attempt counters
+- a maximum failed-attempt threshold
+- temporary IP blocking after the threshold is reached
+- a minimum interval between requests that returns a simulated `429 Too Many Requests` result when requests arrive too quickly
+- counter reset after a successful login
+
+These controls are implemented as Python objects and in-memory data structures. The project does **not** include a production web server, reverse proxy, WAF or persistent distributed rate limiter.
+
+## Security lessons
+
+The lab illustrates several practical limitations of simple defenses:
+
+- rate limiting based only on request speed can be avoided by slower attempts
+- per-process, in-memory counters are not sufficient for a distributed production system
+- IP-based blocking alone can create false positives and does not replace MFA, secure password storage, monitoring or broader identity controls
+- a string such as `429 Too Many Requests` in this simulation represents application logic; it is not evidence of an actual HTTP gateway or firewall response
+
+## Run locally
 
 ```bash
-# Projeyi klonlayın
-git clone [https://github.com/KULLANICI_ADINIZ/PROJE_ADINIZ.git](https://github.com/KULLANICI_ADINIZ/PROJE_ADINIZ.git)
-
-# Proje dizinine girin
-cd PROJE_ADINIZ
-
-# Laboratuvarı çalıştırın (attacker.py içindeki deney senaryolarını değiştirerek test edebilirsiniz)
+git clone https://github.com/AtakanTas-io/Siber-Proje.git
+cd Siber-Proje
 python attacker.py
 ```
+
+Review the scripts before changing scenarios or thresholds.
+
+## Responsible use
+
+Use security-testing code only in environments you own or are explicitly authorized to test. This repository is published for defensive learning and controlled local experimentation.
+
+## Status
+
+Educational lab / prototype. It is intentionally small and is not presented as a production authentication framework.
